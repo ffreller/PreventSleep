@@ -1,7 +1,7 @@
 def move_if_idle(check_interval, max_running_time):
     from time import sleep
-    from win32api import GetCursorPos
     from datetime import datetime
+    from pyautogui import position
     print_with_time(f"Initializing...\n")
     interval_seconds = int(check_interval*60)
     
@@ -10,9 +10,9 @@ def move_if_idle(check_interval, max_running_time):
         start_time = datetime.now()
     
     while True:
-        init_cursor_pos = GetCursorPos()
+        init_cursor_pos = position()
         sleep(interval_seconds)
-        cursor_pos = GetCursorPos()
+        cursor_pos = position()
         
         if max_running_time is not None:
             now = datetime.now()
@@ -22,7 +22,7 @@ def move_if_idle(check_interval, max_running_time):
             
         if cursor_pos == init_cursor_pos:
             random_moves_and_press(n_times=5, interval_seconds=.25)
-            print_with_time(f"Moved from {cursor_pos} to {GetCursorPos()}")
+            print_with_time(f"Moved from {cursor_pos} to {position()}")
         else:
             print_with_time(f"I won't interrupt. Pos: {cursor_pos}")
             continue
