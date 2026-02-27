@@ -20,6 +20,9 @@ Default key press config lives in `src/helpers.py`:
 uv sync
 ```
 
+Linux only: install `xprintidle` to enable keyboard + mouse idle detection.
+Without it, the script falls back to mouse-only idle detection.
+
 ## Usage
 
 ```bash
