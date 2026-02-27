@@ -14,7 +14,7 @@ from src.activity_detectors import build_activity_detectors
 
 # Default key press configuration (adjust here, not via CLI)
 DEFAULT_KEY_NAME = "f13"
-DEFAULT_KEY_INTERVAL_MINUTES = 10.0
+DEFAULT_KEY_INTERVAL_MINUTES = 5
 
 
 @dataclass(frozen=True)
@@ -55,7 +55,7 @@ def run_keep_awake(
     check_interval_minutes: float,
     logger: logging.Logger,
     max_running_time_minutes: Optional[float] = None,
-    jiggle_pixels: int = 1,
+    jiggle_pixels: int = 10,
     key_name: str = DEFAULT_KEY_NAME,
     key_interval_minutes: float = DEFAULT_KEY_INTERVAL_MINUTES,
 ) -> None:
