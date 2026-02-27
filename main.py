@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from argparse import ArgumentParser, ArgumentTypeError
+import os
+import platform
+import subprocess
+import sys
+from argparse import SUPPRESS, ArgumentParser, ArgumentTypeError
+from pathlib import Path
+from typing import Optional
 
 from funcs import run_keep_awake, setup_logging
 
@@ -78,7 +84,7 @@ def parse_args() -> object:
         default=None,
         help="Minutes between key presses (required if --key-name is set).",
     )
-    parser.add_argument("--log-level", default="INFO", help="DEBUG, INFO, WARNING, ERROR")
+    parser.add_argument("--worker", action="store_true", help=SUPPRESS)
 
     args = parser.parse_args()
 
@@ -90,24 +96,67 @@ def parse_args() -> object:
     return args
 
 
+def _append_if_not_none(cmd: list[str], flag: str, value: Optional[object]) -> None:
+    if value is not None:
+        cmd.extend([flag, str(value)])
+
+
+def run_worker(args: object) -> int:
+    logger = setup_logging(level="INFO")
+    run_keep_awake(
+        check_interval_minutes=args.check_interval,
+        logger=logger,
+        max_running_time_minutes=args.max_running_time,
+        idle_threshold_seconds=args.idle_threshold,
+        jiggle_pixels=max(1, args.jiggle_pixels),
+        key_name=args.key_name,
+        key_interval_minutes=args.key_interval,
+    )
+    return 0
+
+
+def spawn_background(args: object) -> int:
+    script_path = Path(__file__).resolve()
+    cmd = [
+        sys.executable,
+        str(script_path),
+        "--worker",
+        "--check-interval",
+        str(args.check_interval),
+    ]
+
+    _append_if_not_none(cmd, "--max-running-time", args.max_running_time)
+    _append_if_not_none(cmd, "--idle-threshold", args.idle_threshold)
+    _append_if_not_none(cmd, "--jiggle-pixels", args.jiggle_pixels)
+    _append_if_not_none(cmd, "--key-name", args.key_name)
+    _append_if_not_none(cmd, "--key-interval", args.key_interval)
+
+    if platform.system().lower() == "windows":
+        creationflags = 0
+        creationflags |= getattr(subprocess, "DETACHED_PROCESS", 0)
+        creationflags |= getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        creationflags |= getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        process = subprocess.Popen(cmd, creationflags=creationflags, close_fds=True)
+    else:
+        with open(os.devnull, "rb") as devnull_in, open(os.devnull, "ab") as devnull_out:
+            process = subprocess.Popen(
+                cmd,
+                stdin=devnull_in,
+                stdout=devnull_out,
+                stderr=devnull_out,
+                start_new_session=True,
+                close_fds=True,
+            )
+
+    print(f"Started background keep-awake process PID={process.pid}")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
-    logger = setup_logging(level=args.log_level)
-
-    try:
-        run_keep_awake(
-            check_interval_minutes=args.check_interval,
-            logger=logger,
-            max_running_time_minutes=args.max_running_time,
-            idle_threshold_seconds=args.idle_threshold,
-            jiggle_pixels=max(1, args.jiggle_pixels),
-            key_name=args.key_name,
-            key_interval_minutes=args.key_interval,
-        )
-        return 0
-    except KeyboardInterrupt:
-        logger.info("Ctrl+C received. Stopping.")
-        return 0
+    if args.worker:
+        return run_worker(args)
+    return spawn_background(args)
 
 
 if __name__ == "__main__":

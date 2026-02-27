@@ -31,17 +31,21 @@ def run_keep_awake(
 ) -> None:
     from pyautogui import moveTo, position, press, size
 
+    if (key_name is None) != (key_interval_minutes is None):
+        raise ValueError("key_name and key_interval_minutes must be provided together")
+
     interval_seconds = check_interval_minutes * 60
     idle_threshold = idle_threshold_seconds if idle_threshold_seconds is not None else interval_seconds
     jiggle_step = max(1, int(jiggle_pixels))
+    key_interval_seconds = key_interval_minutes * 60 if key_interval_minutes is not None else None
 
     start_time = monotonic()
     last_activity_time = monotonic()
     last_position = position()
 
     next_key_time: Optional[float] = None
-    if key_name and key_interval_minutes:
-        next_key_time = monotonic() + (key_interval_minutes * 60)
+    if key_name and key_interval_seconds is not None:
+        next_key_time = monotonic() + key_interval_seconds
 
     logger.info(
         "Started: interval=%ss idle_threshold=%ss jiggle=%spx key=%s key_interval=%smin",
@@ -83,10 +87,10 @@ def run_keep_awake(
         moveTo(x, y, duration=0)
 
         key_sent = False
-        if key_name and next_key_time is not None and now >= next_key_time:
+        if key_name and key_interval_seconds is not None and next_key_time is not None and now >= next_key_time:
             press(key_name)
             key_sent = True
-            next_key_time = now + (key_interval_minutes * 60)
+            next_key_time = now + key_interval_seconds
 
         logger.info(
             "Synthetic input sent: jiggle_return at (%s,%s)%s",
