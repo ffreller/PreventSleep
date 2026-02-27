@@ -10,6 +10,8 @@ from pathlib import Path
 from time import monotonic, sleep
 from typing import Optional
 
+from src.activity_detectors import build_activity_detectors
+
 # Default key press configuration (adjust here, not via CLI)
 DEFAULT_KEY_NAME = "f13"
 DEFAULT_KEY_INTERVAL_MINUTES = 10.0
@@ -62,8 +64,8 @@ def run_keep_awake(
     key_interval_seconds = key_interval_minutes * 60
 
     start_time = monotonic()
-    last_activity_time = monotonic()
-    last_position = position()
+
+    user_idle_seconds, key_event_time = build_activity_detectors(logger, position)
 
     next_key_time = monotonic() + key_interval_seconds
 
@@ -85,14 +87,7 @@ def run_keep_awake(
                 logger.info("Stopping: max running time reached")
                 return
 
-        current_position = position()
-        if current_position != last_position:
-            last_position = current_position
-            last_activity_time = now
-            logger.debug("User active; skipping synthetic input")
-            continue
-
-        idle_for = now - last_activity_time
+        idle_for = user_idle_seconds()
         if idle_for < required_idle_seconds:
             logger.debug("Idle for %.2fs (required %.2fs); skipping", idle_for, required_idle_seconds)
             continue
@@ -103,11 +98,27 @@ def run_keep_awake(
         if target_x >= width:
             target_x = max(0, x - jiggle_step)
 
+        key_event_marker = key_event_time() if key_event_time is not None else None
+
         moveTo(target_x, y, duration=0)
+        if tuple(position()) != (target_x, y):
+            logger.info("User moved cursor during jiggle; aborting synthetic input for this cycle")
+            continue
+
         moveTo(x, y, duration=0)
+        if tuple(position()) != (x, y):
+            logger.info("User moved cursor during return; skipping key press for this cycle")
+            continue
 
         key_sent = False
         if now >= next_key_time:
+            if (
+                key_event_time is not None
+                and key_event_marker is not None
+                and key_event_time() > (key_event_marker + 0.01)
+            ):
+                logger.info("User typed during jiggle; skipping key press for this cycle")
+                continue
             press(key_name)
             key_sent = True
             next_key_time = now + key_interval_seconds

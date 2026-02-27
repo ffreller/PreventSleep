@@ -7,6 +7,7 @@ How it works:
 - If the user is idle long enough, it sends minimal synthetic input:
   - tiny mouse jiggle + return to original position
   - low-frequency harmless key press (enabled by default)
+- If user activity is detected (mouse/keyboard), that cycle is skipped, and in-progress synthetic input is aborted for the cycle.
 - Runs in background (detached process) when started.
 
 Default key press config lives in `src/helpers.py`:
