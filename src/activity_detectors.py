@@ -21,11 +21,15 @@ def build_activity_detectors(
     if system == "linux":
         return _build_linux_activity_detectors(logger, position_getter)
 
-    logger.warning("Unsupported platform '%s'; using mouse-only activity detection", system)
+    logger.warning(
+        "Unsupported platform '%s'; using mouse-only activity detection", system
+    )
     return _build_mouse_only_idle_detector(position_getter), None
 
 
-def _build_mouse_only_idle_detector(position_getter: Callable[[], object]) -> Callable[[], float]:
+def _build_mouse_only_idle_detector(
+    position_getter: Callable[[], object],
+) -> Callable[[], float]:
     last_position = position_getter()
     last_activity_time = monotonic()
 
@@ -49,14 +53,16 @@ def _build_windows_activity_detectors(
         import ctypes
         from ctypes import wintypes
     except Exception as exc:  # pragma: no cover - platform/runtime specific
-        logger.warning("Windows input detection unavailable (%s); using mouse-only detection", exc)
+        logger.warning(
+            "Windows input detection unavailable (%s); using mouse-only detection", exc
+        )
         return _build_mouse_only_idle_detector(position_getter), None
 
     class LASTINPUTINFO(ctypes.Structure):
         _fields_ = [("cbSize", wintypes.UINT), ("dwTime", wintypes.DWORD)]
 
-    user32 = ctypes.windll.user32 #type: ignore
-    kernel32 = ctypes.windll.kernel32 #type: ignore
+    user32 = ctypes.windll.user32  # type: ignore
+    kernel32 = ctypes.windll.kernel32  # type: ignore
     user32.GetLastInputInfo.argtypes = [ctypes.POINTER(LASTINPUTINFO)]
     user32.GetLastInputInfo.restype = wintypes.BOOL
     kernel32.GetTickCount.restype = wintypes.DWORD
@@ -73,7 +79,7 @@ def _build_windows_activity_detectors(
             info = LASTINPUTINFO()
             info.cbSize = ctypes.sizeof(LASTINPUTINFO)
             if not user32.GetLastInputInfo(ctypes.byref(info)):
-                raise ctypes.WinError() #type: ignore
+                raise ctypes.WinError()  # type: ignore
 
             now_ms = kernel32.GetTickCount()
             idle_ms = (now_ms - info.dwTime) & 0xFFFFFFFF
@@ -132,19 +138,21 @@ def _build_macos_activity_detectors(
     position_getter: Callable[[], object],
 ) -> tuple[Callable[[], float], Optional[Callable[[], float]]]:
     try:
-        from Quartz import (
-            CGEventSourceSecondsSinceLastEventType, #type: ignore
-            kCGEventKeyDown, #type: ignore
-            kCGEventLeftMouseDown, #type: ignore
-            kCGEventLeftMouseUp, #type: ignore
-            kCGEventMouseMoved, #type: ignore
-            kCGEventRightMouseDown, #type: ignore
-            kCGEventRightMouseUp, #type: ignore
-            kCGEventScrollWheel, #type: ignore
-            kCGEventSourceStateCombinedSessionState, #type: ignore
+        from Quartz import (  # type: ignore[import-untyped]
+            CGEventSourceSecondsSinceLastEventType,  # type: ignore
+            kCGEventKeyDown,  # type: ignore
+            kCGEventLeftMouseDown,  # type: ignore
+            kCGEventLeftMouseUp,  # type: ignore
+            kCGEventMouseMoved,  # type: ignore
+            kCGEventRightMouseDown,  # type: ignore
+            kCGEventRightMouseUp,  # type: ignore
+            kCGEventScrollWheel,  # type: ignore
+            kCGEventSourceStateCombinedSessionState,  # type: ignore
         )
     except Exception as exc:  # pragma: no cover - platform/runtime specific
-        logger.warning("macOS input detection unavailable (%s); using mouse-only detection", exc)
+        logger.warning(
+            "macOS input detection unavailable (%s); using mouse-only detection", exc
+        )
         return _build_mouse_only_idle_detector(position_getter), None
 
     monitored_event_types = (

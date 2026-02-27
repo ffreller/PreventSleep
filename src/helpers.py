@@ -40,7 +40,9 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
     logger.propagate = False
     logger.handlers.clear()
 
-    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S"
+    )
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
@@ -57,7 +59,7 @@ def run_keep_awake(
     key_name: str = DEFAULT_KEY_NAME,
     key_interval_minutes: float = DEFAULT_KEY_INTERVAL_MINUTES,
 ) -> None:
-    from pyautogui import moveTo, position, press, size
+    from pyautogui import moveTo, position, press, size  # type: ignore[import-untyped]
 
     interval_seconds = check_interval_minutes * 60
     required_idle_seconds = interval_seconds
@@ -90,7 +92,11 @@ def run_keep_awake(
 
         idle_for = user_idle_seconds()
         if idle_for < required_idle_seconds:
-            logger.debug("Idle for %.2fs (required %.2fs); skipping", idle_for, required_idle_seconds)
+            logger.debug(
+                "Idle for %.2fs (required %.2fs); skipping",
+                idle_for,
+                required_idle_seconds,
+            )
             continue
 
         x, y = position()
@@ -103,12 +109,16 @@ def run_keep_awake(
 
         moveTo(target_x, y, duration=0)
         if tuple(position()) != (target_x, y):
-            logger.info("User moved cursor during jiggle; aborting synthetic input for this cycle")
+            logger.info(
+                "User moved cursor during jiggle; aborting synthetic input for this cycle"
+            )
             continue
 
         moveTo(x, y, duration=0)
         if tuple(position()) != (x, y):
-            logger.info("User moved cursor during return; skipping key press for this cycle")
+            logger.info(
+                "User moved cursor during return; skipping key press for this cycle"
+            )
             continue
 
         key_sent = False
@@ -118,7 +128,9 @@ def run_keep_awake(
                 and key_event_marker is not None
                 and key_event_time() > (key_event_marker + 0.01)
             ):
-                logger.info("User typed during jiggle; skipping key press for this cycle")
+                logger.info(
+                    "User typed during jiggle; skipping key press for this cycle"
+                )
                 continue
             press(key_name)
             key_sent = True
@@ -174,7 +186,9 @@ def spawn_background(args: CliArgs) -> int:
         creationflags |= getattr(subprocess, "CREATE_NO_WINDOW", 0)
         process = subprocess.Popen(cmd, creationflags=creationflags, close_fds=True)
     else:
-        with open(os.devnull, "rb") as devnull_in, open(os.devnull, "ab") as devnull_out:
+        with open(os.devnull, "rb") as devnull_in, open(
+            os.devnull, "ab"
+        ) as devnull_out:
             process = subprocess.Popen(
                 cmd,
                 stdin=devnull_in,

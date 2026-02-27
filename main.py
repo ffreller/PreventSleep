@@ -1,12 +1,12 @@
 from __future__ import annotations
-
 from argparse import SUPPRESS, ArgumentParser
-
 from src.helpers import CliArgs, run_worker, spawn_background
 
 
 def parse_args() -> CliArgs:
-    parser = ArgumentParser(description="Minimal keep-awake script using tiny synthetic input")
+    parser = ArgumentParser(
+        description="Minimal keep-awake script using tiny synthetic input"
+    )
 
     parser.add_argument(
         "--check-interval",

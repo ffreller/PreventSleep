@@ -6,3 +6,15 @@ dependencies = [
     "pyautogui==0.9.53",
     "pyobjc-framework-quartz>=12.1; sys_platform == 'darwin'",
 ]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pre-commit>=4.5.1",
+    "types-pyautogui>=0.9.3.20241230",
+]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["main.py", "src"]
+explicit_package_bases = true
