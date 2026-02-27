@@ -1,4 +1,4 @@
-def move_if_idle(check_interval:  float, max_running_time: float):
+def move_if_idle(check_interval: float, max_running_time: float):
     """
     Moves the cursor periodically and performs actions if the cursor remains idle.
 
