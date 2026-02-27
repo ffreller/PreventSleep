@@ -6,8 +6,12 @@ How it works:
 - Checks every `--check-interval` minutes.
 - If the user is idle long enough, it sends minimal synthetic input:
   - tiny mouse jiggle + return to original position
-  - optional low-frequency harmless key press
+  - low-frequency harmless key press (enabled by default)
 - Runs in background (detached process) when started.
+
+Default key press config lives in `src/helpers.py`:
+- `DEFAULT_KEY_NAME` (default: `f13`)
+- `DEFAULT_KEY_INTERVAL_MINUTES` (default: `10`)
 
 ## Install
 
@@ -27,10 +31,7 @@ The command immediately returns and leaves the keep-awake process running in bac
 
 - `--check-interval` (required): minutes between checks.
 - `--max-running-time`: optional total runtime in minutes.
-- `--idle-threshold`: idle seconds needed before sending synthetic input (default: `check_interval * 60`).
-- `--jiggle-pixels`: jiggle size in pixels (default: `1`).
-- `--key-name`: optional key (example: `shift`).
-- `--key-interval`: minutes between key presses (required with `--key-name`).
+- `--jiggle-pixels`: jiggle size in pixels (default: `10`).
 
 ## Examples
 
@@ -40,10 +41,10 @@ Minimal:
 uv run python main.py --check-interval 2
 ```
 
-For strict app idle checks:
+Run for 30 minutes:
 
 ```bash
-uv run python main.py --check-interval 1 --idle-threshold 60 --key-name shift --key-interval 10
+uv run python main.py --check-interval 1 --max-running-time 30
 ```
 
 Stop the background process from your OS process manager (Task Manager / Activity Monitor / `kill`).
