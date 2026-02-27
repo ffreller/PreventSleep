@@ -1,93 +1,96 @@
-def move_if_idle(check_interval: float, max_running_time: float):
-    """
-    Moves the cursor periodically and performs actions if the cursor remains idle.
+from __future__ import annotations
 
-    Parameters:
-    - check_interval (float): Time in minutes between cursor position checks.
-    - max_running_time (float or None): Maximum time in minutes for the script to run. If None, the script runs indefinitely.
-    """
-    from time import sleep
-    from datetime import datetime
-    from pyautogui import position
-    print_with_time(f"Initializing...\n")
-    interval_seconds = int(check_interval*60)
-    
-    if max_running_time is not None:
-        max_running_time_seconds = int(max_running_time*60)
-        start_time = datetime.now()
-    
+import logging
+from time import monotonic, sleep
+from typing import Optional
+
+
+def setup_logging(level: str = "INFO") -> logging.Logger:
+    logger = logging.getLogger("prevent_sleep")
+    logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+    logger.propagate = False
+    logger.handlers.clear()
+
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S")
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    return logger
+
+
+def run_keep_awake(
+    check_interval_minutes: float,
+    logger: logging.Logger,
+    max_running_time_minutes: Optional[float] = None,
+    idle_threshold_seconds: Optional[float] = None,
+    jiggle_pixels: int = 1,
+    key_name: Optional[str] = None,
+    key_interval_minutes: Optional[float] = None,
+) -> None:
+    from pyautogui import moveTo, position, press, size
+
+    interval_seconds = check_interval_minutes * 60
+    idle_threshold = idle_threshold_seconds if idle_threshold_seconds is not None else interval_seconds
+    jiggle_step = max(1, int(jiggle_pixels))
+
+    start_time = monotonic()
+    last_activity_time = monotonic()
+    last_position = position()
+
+    next_key_time: Optional[float] = None
+    if key_name and key_interval_minutes:
+        next_key_time = monotonic() + (key_interval_minutes * 60)
+
+    logger.info(
+        "Started: interval=%ss idle_threshold=%ss jiggle=%spx key=%s key_interval=%smin",
+        round(interval_seconds, 2),
+        round(idle_threshold, 2),
+        jiggle_step,
+        key_name,
+        key_interval_minutes,
+    )
+
     while True:
-        init_cursor_pos = position()
         sleep(interval_seconds)
-        cursor_pos = position()
-        
-        if max_running_time is not None:
-            now = datetime.now()
-            if (now - start_time).seconds >= max_running_time_seconds:
-                print(f"Stopping after {max_running_time} minutes")
+        now = monotonic()
+
+        if max_running_time_minutes is not None:
+            if now - start_time >= (max_running_time_minutes * 60):
+                logger.info("Stopping: max running time reached")
                 return
-            
-        if cursor_pos == init_cursor_pos:
-            random_moves_and_press(n_times=5, interval_seconds=.25)
-            print_with_time(f"Moved from {cursor_pos} to {position()}")
-        else:
-            print_with_time(f"I won't interrupt. Pos: {cursor_pos}")
+
+        current_position = position()
+        if current_position != last_position:
+            last_position = current_position
+            last_activity_time = now
+            logger.debug("User active; skipping synthetic input")
             continue
 
+        idle_for = now - last_activity_time
+        if idle_for < idle_threshold:
+            logger.debug("Idle for %.2fs (threshold %.2fs); skipping", idle_for, idle_threshold)
+            continue
 
-def print_with_time(text: str):
-    """
-    Prints a timestamp followed by the provided text.
+        x, y = position()
+        width, _ = size()
+        target_x = x + jiggle_step
+        if target_x >= width:
+            target_x = max(0, x - jiggle_step)
 
-    Parameters:
-    - text (str): The text to be printed.
-    """
-    from datetime import datetime
-    print(f"{datetime.now().strftime('%H:%M:%S')} - {text}")
-    
+        moveTo(target_x, y, duration=0)
+        moveTo(x, y, duration=0)
 
-def get_moves():
-    """
-    Generates random cursor positions within the screen size.
+        key_sent = False
+        if key_name and next_key_time is not None and now >= next_key_time:
+            press(key_name)
+            key_sent = True
+            next_key_time = now + (key_interval_minutes * 60)
 
-    Returns:
-    - tuple: Two integers representing random cursor positions.
-    """
-    from random import randint
-    from pyautogui import size as screen_size
-    max1, max2 = screen_size()
-    rand1, rand2 = randint(0, max1), randint(0, max2)
-    return rand1, rand2
-
-
-def random_move():
-    """
-    Moves the cursor to a random position on the screen.
-    """
-    from pyautogui import moveTo
-    pos1, pos2 = get_moves()
-    moveTo(pos1, pos2)
-
-
-def random_moves_and_press(n_times: int, interval_seconds: float):
-    """
-    Performs a sequence of actions:
-    1. Moves the cursor to a random position.
-    2. Right-clicks the mouse.
-    3. Presses the "esc" key.
-    4. Sleeps for a specified interval.
-
-    Parameters:
-    - n_times (int): Number of times to perform the sequence.
-    - interval_seconds (float): Time in seconds to sleep between sequences.
-    """
-    from pyautogui import press, click
-    from time import sleep
-    for _ in range(n_times):
-        random_move()
-        click(button="right")
-        press("esc")
-        sleep(interval_seconds)
-    
-
-    
+        logger.info(
+            "Synthetic input sent: jiggle_return at (%s,%s)%s",
+            x,
+            y,
+            f", key={key_name}" if key_sent else "",
+        )
