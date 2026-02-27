@@ -55,8 +55,8 @@ def _build_windows_activity_detectors(
     class LASTINPUTINFO(ctypes.Structure):
         _fields_ = [("cbSize", wintypes.UINT), ("dwTime", wintypes.DWORD)]
 
-    user32 = ctypes.windll.user32
-    kernel32 = ctypes.windll.kernel32
+    user32 = ctypes.windll.user32 #type: ignore
+    kernel32 = ctypes.windll.kernel32 #type: ignore
     user32.GetLastInputInfo.argtypes = [ctypes.POINTER(LASTINPUTINFO)]
     user32.GetLastInputInfo.restype = wintypes.BOOL
     kernel32.GetTickCount.restype = wintypes.DWORD
@@ -73,7 +73,7 @@ def _build_windows_activity_detectors(
             info = LASTINPUTINFO()
             info.cbSize = ctypes.sizeof(LASTINPUTINFO)
             if not user32.GetLastInputInfo(ctypes.byref(info)):
-                raise ctypes.WinError()
+                raise ctypes.WinError() #type: ignore
 
             now_ms = kernel32.GetTickCount()
             idle_ms = (now_ms - info.dwTime) & 0xFFFFFFFF
