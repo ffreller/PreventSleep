@@ -8,7 +8,8 @@ How it works:
   - tiny mouse jiggle + return to original position
   - low-frequency harmless key press (enabled by default)
 - If user activity is detected (mouse/keyboard), that cycle is skipped, and in-progress synthetic input is aborted for the cycle.
-- Runs in background (detached process) when started.
+- Runs in foreground by default (stop with `Ctrl+C`).
+- Optional detached background mode via `--background`.
 
 Default key press config lives in `src/helpers.py`:
 - `DEFAULT_KEY_NAME` (default: `f13`)
@@ -29,13 +30,14 @@ Without it, the script falls back to mouse-only idle detection.
 uv run python main.py --check-interval 2
 ```
 
-The command immediately returns and leaves the keep-awake process running in background.
+The command stays attached to your terminal. Press `Ctrl+C` to stop it.
 
 ## Useful options
 
 - `--check-interval` (required): minutes between checks.
 - `--max-running-time`: optional total runtime in minutes.
 - `--jiggle-pixels`: jiggle size in pixels (default: `10`).
+- `--background`: run detached and return immediately.
 
 ## Examples
 
@@ -51,4 +53,10 @@ Run for 30 minutes:
 uv run python main.py --check-interval 1 --max-running-time 30
 ```
 
-Stop the background process from your OS process manager (Task Manager / Activity Monitor / `kill`).
+Run detached in background:
+
+```bash
+uv run python main.py --check-interval 2 --background
+```
+
+In background mode, stop the process from your OS process manager (Task Manager / Activity Monitor / `kill`).

@@ -30,6 +30,11 @@ def parse_args() -> CliArgs:
         default=10,
         help="Small mouse move distance in pixels (default: 10).",
     )
+    parser.add_argument(
+        "--background",
+        action="store_true",
+        help="Run detached in background (default is foreground, cancellable with Ctrl+C).",
+    )
     parser.add_argument("--worker", action="store_true", help=SUPPRESS)
 
     args = parser.parse_args()
@@ -40,6 +45,7 @@ def parse_args() -> CliArgs:
             max_running_time=args.max_running_time,
             jiggle_pixels=args.jiggle_pixels,
             worker=args.worker,
+            background=args.background,
         )
     except ValueError as exc:
         parser.error(str(exc))
@@ -47,7 +53,7 @@ def parse_args() -> CliArgs:
 
 def main() -> int:
     args = parse_args()
-    if args.worker:
+    if args.worker or not args.background:
         return run_worker(args)
     return spawn_background(args)
 

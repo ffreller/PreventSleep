@@ -23,6 +23,7 @@ class CliArgs:
     max_running_time: Optional[float]
     jiggle_pixels: int
     worker: bool
+    background: bool
 
     def __post_init__(self) -> None:
         if self.check_interval <= 0:
@@ -138,14 +139,18 @@ def _append_if_not_none(cmd: list[str], flag: str, value: Optional[object]) -> N
 
 def run_worker(args: CliArgs) -> int:
     logger = setup_logging(level="INFO")
-    run_keep_awake(
-        check_interval_minutes=args.check_interval,
-        logger=logger,
-        max_running_time_minutes=args.max_running_time,
-        jiggle_pixels=max(1, args.jiggle_pixels),
-        key_name=DEFAULT_KEY_NAME,
-        key_interval_minutes=DEFAULT_KEY_INTERVAL_MINUTES,
-    )
+    try:
+        run_keep_awake(
+            check_interval_minutes=args.check_interval,
+            logger=logger,
+            max_running_time_minutes=args.max_running_time,
+            jiggle_pixels=max(1, args.jiggle_pixels),
+            key_name=DEFAULT_KEY_NAME,
+            key_interval_minutes=DEFAULT_KEY_INTERVAL_MINUTES,
+        )
+    except KeyboardInterrupt:
+        logger.info("Stopping: interrupted by user (Ctrl+C)")
+        return 130
     return 0
 
 
