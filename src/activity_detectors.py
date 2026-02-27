@@ -133,15 +133,15 @@ def _build_macos_activity_detectors(
 ) -> tuple[Callable[[], float], Optional[Callable[[], float]]]:
     try:
         from Quartz import (
-            CGEventSourceSecondsSinceLastEventType,
-            kCGEventKeyDown,
-            kCGEventLeftMouseDown,
-            kCGEventLeftMouseUp,
-            kCGEventMouseMoved,
-            kCGEventRightMouseDown,
-            kCGEventRightMouseUp,
-            kCGEventScrollWheel,
-            kCGEventSourceStateCombinedSessionState,
+            CGEventSourceSecondsSinceLastEventType, #type: ignore
+            kCGEventKeyDown, #type: ignore
+            kCGEventLeftMouseDown, #type: ignore
+            kCGEventLeftMouseUp, #type: ignore
+            kCGEventMouseMoved, #type: ignore
+            kCGEventRightMouseDown, #type: ignore
+            kCGEventRightMouseUp, #type: ignore
+            kCGEventScrollWheel, #type: ignore
+            kCGEventSourceStateCombinedSessionState, #type: ignore
         )
     except Exception as exc:  # pragma: no cover - platform/runtime specific
         logger.warning("macOS input detection unavailable (%s); using mouse-only detection", exc)
