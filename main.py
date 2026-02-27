@@ -12,7 +12,8 @@ def parse_args() -> CliArgs:
         "--check-interval",
         "--check_interval",
         dest="check_interval",
-        required=True,
+        required=False,
+        default=5,
         type=float,
         help="Minutes between checks (required).",
     )
@@ -39,16 +40,13 @@ def parse_args() -> CliArgs:
 
     args = parser.parse_args()
 
-    try:
-        return CliArgs(
-            check_interval=args.check_interval,
-            max_running_time=args.max_running_time,
-            jiggle_pixels=args.jiggle_pixels,
-            worker=args.worker,
-            background=args.background,
-        )
-    except ValueError as exc:
-        parser.error(str(exc))
+    return CliArgs(
+        check_interval=args.check_interval,
+        max_running_time=args.max_running_time,
+        jiggle_pixels=args.jiggle_pixels,
+        worker=args.worker,
+        background=args.background,
+    )
 
 
 def main() -> int:
