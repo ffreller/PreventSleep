@@ -121,7 +121,6 @@ def run_keep_awake(
             )
             continue
 
-        key_sent = False
         if now >= next_key_time:
             if (
                 key_event_time is not None
@@ -133,15 +132,9 @@ def run_keep_awake(
                 )
                 continue
             press(key_name)
-            key_sent = True
             next_key_time = now + key_interval_seconds
-
-        logger.info(
-            "Synthetic input sent: jiggle_return at (%s,%s)%s",
-            x,
-            y,
-            f", key={key_name}" if key_sent else "",
-        )
+            
+        logger.info("Moved: (%s,%s)", x, y)
 
 
 def _append_if_not_none(cmd: list[str], flag: str, value: Optional[object]) -> None:
